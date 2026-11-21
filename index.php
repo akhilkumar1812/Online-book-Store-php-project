@@ -25,10 +25,10 @@
         <a style="padding:2px 10px;" class="nav-item nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
       </div>
       <div style="margin-left:1000px;">
-        <a style="font-family:roboto;"href="/onlinebookstore/login.php">log in</a>
+        <a style="font-family:roboto;" href="login.php">log in</a>
       </div>
       <div style="margin-left:50px; ">
-        <a style="font-family:roboto;"href="/onlinebookstore/signup.php">sign up</a>
+        <a style="font-family:roboto;" href="signup.php">sign up</a>
       </div>
       
     </div>
@@ -38,7 +38,8 @@
     <p style="text-align:center;color:red;font-size:20px;"> Log in to get access to books </p>
   </div>
 <?php
-@include 'config.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/config.php';
    $select = mysqli_query($conn, "SELECT * FROM books");
    
 ?>
@@ -46,14 +47,14 @@
     <div class="row">
         <?php while($row = mysqli_fetch_assoc($select)){ ?>
         <div class="card" style="width: 18rem;padding:20px;margin:10px;">
-        <img class="card-img-top"style="width: 150px;height:200px;text-align:center;" src="uploaded_img/<?php echo $row['image']; ?>" alt="Card image cap">
+        <img class="card-img-top"style="width: 150px;height:200px;text-align:center;" src="uploaded_img/<?php echo rawurlencode($row['image']); ?>" alt="Card image cap">
         <div class="card-body">
-          <h5 class="card-title"><?php echo $row['name']; ?></h5>
-          <h5 class="card-title">$<?php echo $row['price']; ?>/-</h5>
-          <p class="card-text"><?php echo $row['description']; ?></p>
+          <h5 class="card-title"><?php echo h($row['name']); ?></h5>
+          <h5 class="card-title">$<?php echo h($row['price']); ?>/-</h5>
+          <p class="card-text"><?php echo h($row['description']); ?></p>
         </div>
         <ul class="list-group list-group-flush">
-          <h5 class="card-title">Author: <?php echo $row['author']; ?></h5>
+          <h5 class="card-title">Author: <?php echo h($row['author']); ?></h5>
         </ul>
         
         </div>

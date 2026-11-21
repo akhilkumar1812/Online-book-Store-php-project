@@ -1,9 +1,6 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-    header('Location: login.php');
-    exit();
-}
+require_once __DIR__ . '/auth.php';
+require_login();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,7 +29,7 @@ if (!isset($_SESSION['username'])) {
         <a style="padding:2px 10px;" class="nav-item nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
       </div>
       <div style="margin-left:1000px;margin-top:10px;">
-        <p style="font-family:italic;"class="text-primary" >Hello <?php echo htmlspecialchars($_SESSION['username'], ENT_QUOTES, 'UTF-8'); ?> </p>
+        <p style="font-family:italic;"class="text-primary" >Hello <?php echo h($_SESSION['username']); ?> </p>
       </div>
       <div style="margin-left:50px;">
         <a style="font-family:italic;"href="logout.php">log out</a>
@@ -52,15 +49,15 @@ if (!isset($_SESSION['username'])) {
     <div class="row">
         <?php while($row = mysqli_fetch_assoc($select)){ ?>
         <div class="card" style="width: 18rem;padding:20px;margin:10px;">
-        <img class="card-img-top"style="width: 150px;height:200px;text-align:center;" src="uploaded_img/<?php echo $row['image']; ?>" alt="Card image cap">
+        <img class="card-img-top"style="width: 150px;height:200px;text-align:center;" src="uploaded_img/<?php echo rawurlencode($row['image']); ?>" alt="Card image cap">
         <div class="card-body">
-          <h5 class="card-title"><?php echo $row['name']; ?></h5>
-          <h5 class="card-title">$<?php echo $row['price']; ?>/-</h5>
-          <p class="card-text"><?php echo $row['description']; ?></p>
+          <h5 class="card-title"><?php echo h($row['name']); ?></h5>
+          <h5 class="card-title">$<?php echo h($row['price']); ?>/-</h5>
+          <p class="card-text"><?php echo h($row['description']); ?></p>
         </div>
         <ul class="list-group list-group-flush">
-          <h5 class="card-title">Author: <?php echo $row['author']; ?></h5>
-          <a style="font-size:15px;"href="download.php?pdf=<?php echo $row['pdf']?>" >download</a>
+          <h5 class="card-title">Author: <?php echo h($row['author']); ?></h5>
+          <a style="font-size:15px;" href="download.php?id=<?php echo (int) $row['id']; ?>">download</a>
         </ul>
         
         </div>

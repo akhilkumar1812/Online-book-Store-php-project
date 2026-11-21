@@ -1,61 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-   <meta charset="UTF-8">
-   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>signup</title>
-
-   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-</head>
-<body>
-
 <?php
-@include 'config.php';
-if(isset($_POST['add_user'])){
-    $username=$_POST['username'];
-    $email=$_POST['email'];
-    $password=$_POST['password'];
-    if(empty($username)||empty($password)||empty($email) )
-    {
-        $message[] = 'please fill out all';
-    }
-    else{
-        $insert="insert into users(username,email,password) values('$username','$email','$password')";
-        if(mysqli_query($conn,$insert))
-        {$message[] = 'Sign up successful';
-        header("Location:login.php");
-        exit();}
-        else
-        {$message[] = 'Sign up failed';}
-    }
-};
-?>
-<div  style="padding:150px 10px;"class="container">
-<?php
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/config.php';
 
-if(isset($message)){
-   foreach($message as $message){
-      echo '<h1>'.$message.'</h1>';
-   }
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    if ($username === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) <= 8) {
+        $error = 'Enter a username, valid email, and password with at least 8 characters.';
+    } else {
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = mysqli_prepare($conn, 'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, \'user\')');
+        mysqli_stmt_bind_param($stmt, 'sss', $username, $email, $hash);
+        if (mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            header('Location: login.php');
+            exit();
+        }
+        $error = mysqli_stmt_errno($stmt) === 1062 ? 'That email is already registered.' : 'Sign up failed.';
+        mysqli_stmt_close($stmt);
+    }
 }
-
 ?>
-<form action="<?php $_SERVER['PHP_SELF'] ?>" method="post" enctype="multipart/form-data">
-  <div class="form-group">
-    <label for="exampleInputEmail1">Enter Username</label>
-    <input type="text" class="form-control" name="username" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
-    <label for="exampleInputEmail1">Email address</label>
-    <input type="email" class="form-control" name="email" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
-    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-  </div>
-  <div class="form-group">
-    <label for="exampleInputPassword1">Password</label>
-    <input type="password" class="form-control" name="password" id="exampleInputPassword1" placeholder="Password">
-  </div>
-
-  <button type="submit" class="btn btn-outline-primary" name="add_user" value="add_user">Submit</button>
-</form>
-</div>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign up</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"></head>
+<body><div class="container" style="max-width:520px;padding-top:100px">
+<h1>Sign up</h1>
+<?php if ($error !== ''): ?><p class="text-danger" role="alert"><?php echo h($error); ?></p><?php endif; ?>
+<form action="signup.php" method="post">
+<div class="form-group"><label for="username">Username</label><input type="text" class="form-control" name="username" id="username" maxlength="255" required></div>
+<div class="form-group"><label for="email">Email address</label><input type="email" class="form-control" name="email" id="email" maxlength="255" autocomplete="email" required></div>
+<div class="form-group"><label for="password">Password (at least 8 characters)</label><input type="password" class="form-control" name="password" id="password" minlength="8" autocomplete="new-password" required></div>
+<button type="submit" class="btn btn-primary">Sign up</button>
+</form></div></body></html>

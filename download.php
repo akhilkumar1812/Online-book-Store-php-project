@@ -1,33 +1,36 @@
 <?php
-    session_start();
-    if (!isset($_SESSION['username'])) {
-        header('Location: login.php');
-        exit();
-    }
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/config.php';
+require_login();
 
-    include 'config.php';
-    if (isset($_GET['pdf']) && is_string($_GET['pdf']))
-    {
-        $filename = basename($_GET['pdf']);
-        $filepath = __DIR__ . DIRECTORY_SEPARATOR . 'pdf' . DIRECTORY_SEPARATOR . $filename;
-        $pdfDirectory = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'pdf');
-        $resolvedFile = realpath($filepath);
-        if ($filename !== '' && $pdfDirectory !== false && $resolvedFile !== false
-            && strpos($resolvedFile, $pdfDirectory . DIRECTORY_SEPARATOR) === 0
-            && is_file($resolvedFile))
-        {
-            header("Cache-Control: public");
-            header("Content-Description: File Transfer");
-            header('Content-Disposition: attachment; filename="' . rawurlencode($filename) . '"');
-            header("Content-Type: application/octet-stream");
-            header("Content-Transfer-Encoding: binary");
+$bookId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+if (!$bookId) {
+    http_response_code(400);
+    exit('Invalid book.');
+}
 
-            readfile($resolvedFile);
-            exit;
-        }
-        else
-        {
-            echo "This file does not exist";
-        }
-    }
-?>
+$stmt = mysqli_prepare($conn, 'SELECT pdf FROM books WHERE id = ? LIMIT 1');
+mysqli_stmt_bind_param($stmt, 'i', $bookId);
+mysqli_stmt_execute($stmt);
+$book = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+mysqli_stmt_close($stmt);
+if (!$book || !preg_match('/\A[\pL\pN._ -]+\.pdf\z/iu', $book['pdf'])) {
+    http_response_code(404);
+    exit('File not found.');
+}
+
+$pdfDirectory = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'pdf');
+$filePath = $pdfDirectory === false ? false : realpath($pdfDirectory . DIRECTORY_SEPARATOR . $book['pdf']);
+if ($filePath === false || !is_file($filePath)
+    || strncmp($filePath, $pdfDirectory . DIRECTORY_SEPARATOR, strlen($pdfDirectory . DIRECTORY_SEPARATOR)) !== 0) {
+    http_response_code(404);
+    exit('File not found.');
+}
+
+header('Content-Type: application/pdf');
+header('Content-Length: ' . filesize($filePath));
+header('Content-Disposition: attachment; filename="' . rawurlencode(basename($filePath)) . '"');
+header('X-Content-Type-Options: nosniff');
+header('Cache-Control: private, no-store');
+readfile($filePath);
+exit();
